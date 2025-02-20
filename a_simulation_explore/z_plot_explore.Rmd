@@ -1,0 +1,67 @@
+---
+title: "Explore the DDM data"
+output: html_document
+---
+```{r setup, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(raincloudplots)
+library(ggbeeswarm)
+library(ggpubr)
+library(corrplot) #plotting correlation matrices
+library(RColorBrewer)
+library(lmerTest)
+library(papaja)
+
+CurrentSourceWD<-dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(CurrentSourceWD)
+
+#load all helper functions
+setwd('~/Documents/GitHub/sharedPaLUtilities/Plotting') #pop into the folder
+files.sources = list.files()
+sapply(files.sources, source)
+setwd(CurrentSourceWD) #go back to main folder
+```
+
+```{r}
+df<-read.csv('../data/test_data.csv')
+df$c<-factor(df$c)
+```
+
+```{r}
+df %>% 
+  TwoWayLineSEsum("coh","rt",GroupVar="c", setTitle = "if we look at correct vs incorrect")
+df %>% 
+  OneWayLineSEsum("coh","rt",setTitle = "if we ignore correct vs incorrect")
+df %>% 
+  OneWayLineSEsum("coh","choice")
+```
+
+# Do we see similar things in STE?
+```{r}
+d2<-read.csv("/Users/xiaobowen/Desktop/PhDGeneralCode/SpotTheEmotion_HGF/all_data.csv")
+exclu<-c(10611981)
+d2<-d2[!(d2$ptpID %in% exclu),]
+ptpList<-unique(d2$ptpID)
+```
+
+```{r}
+d2$accurate<-d2$Response_idx==d2$Outcome_idx
+d2 %>% 
+  TwoWayLineSEsum("Outcome_p_sad","Response_RT",GroupVar="accurate")
+d2[d2$ptpID==ptpList[1],] %>% 
+  TwoWayLineSEsum("Outcome_p_sad","Response_RT",GroupVar="accurate")
+```
+
+```{r}
+dsum<-d2 %>% 
+  group_by(ptpID,accurate,Outcome_p_sad) %>% 
+  summarise(accuracy = mean(accurate,na.rm=T),
+            mean_RT = mean(Response_RT,na.rm=T),
+            p_sad = mean(Response_idx,na.rm=T))
+```
+
+```{r}
+dsum %>% TwoWayLineSEsum("Outcome_p_sad","mean_RT",GroupVar="accurate")
+```
